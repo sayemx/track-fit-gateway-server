@@ -1,6 +1,8 @@
 package com.sayem.trackfit.gatewayserver.filter;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -12,7 +14,6 @@ import com.nimbusds.jwt.SignedJWT;
 import com.sayem.trackfit.gatewayserver.dto.RegisterRequest;
 import com.sayem.trackfit.gatewayserver.service.client.UserFeignClient;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -28,13 +29,14 @@ public class KeycloakUserSyncFilter implements WebFilter{
 	public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
 		
 		log.info("Started executing KeycloakUserSyncFilter");
+
 		
 		String userId = exchange.getRequest().getHeaders().getFirst("X-User-ID");
 		String accessToken = exchange.getRequest().getHeaders().getFirst("Authorization");
 		
 		RegisterRequest registerRequest = getuserDetails(accessToken);
 		
-		if(userId == null) {
+		if(userId == null && accessToken != null) {
 			userId = registerRequest.getKeycloakId();
 		}
 		
@@ -65,7 +67,7 @@ public class KeycloakUserSyncFilter implements WebFilter{
 					}));
 		}
 		
-		return Mono.empty();
+		return chain.filter(exchange);
 	}
 
 	private RegisterRequest getuserDetails(String accessToken) {
